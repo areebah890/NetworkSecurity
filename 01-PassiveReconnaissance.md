@@ -315,7 +315,7 @@ Based on Shodan.io, what is the 3rd most common port used for nginx?
 | Lookup DNS MX records at DNS server (dig) | `dig @1.1.1.1 tryhackme.com MX`       |
 | Lookup DNS TXT records (dig)        | `dig tryhackme.com TXT`                  |
 
-##Recommended Passive Recon Workflow
+## Recommended Passive Recon Workflow
 WHOIS → nslookup/dig → DNSDumpster → Shodan.io
 
 1. WHOIS: Gather registrar and ownership info.
