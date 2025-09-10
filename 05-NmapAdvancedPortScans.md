@@ -317,4 +317,141 @@ possibility that the firewall rules need updating to reflect recent service chan
 
 - if we added `-ff` the fragmentation of data will be multiples of 16 a.k.a the 24 bytes of TCP header would be divided over 2 IP fragments
 - first containing 16 bytes and second containing 8 bytes of the TCP header
-- if prefer to increase size of packets to make them look innocuous = `--data-length NUM` Num = number of bytes we want to append to our packets 
+- if prefer to increase size of packets to make them look innocuous = `--data-length NUM` Num = number of bytes we want to append to our packets
+
+ </details>
+
+
+<details>
+<summary>Idle/Zombie Scan</summary>
+
+- spoofing IP address =  can be great approach for scanning stealthily
+- but spoofing only work in specific network setups = requires us to be in position where you can monitor traffic
+- can upgrade w/ idle scan
+
+- idle/zombie scan requires an idle system connected to the network that you can communicate with
+- Nmap will make each probe appear as if it's coming from idle (zombie) host
+- then it checks for indicators whether the idle host received any response to the spoofed probe
+- accomplished by checking the IP identification (IP ID) value in the IP header
+- can run idle scan w/ `nmap -sI ZOMBIE_MACHINE MACHINE_IP` where `ZOMBIE_ID` is IP addess of idle host
+
+**Idle scan requires following 3 steps to discover whether port is open**
+1. Trigger idle host to respond so you can record current IP ID on idle host
+2. Send SYN packet to a TCP port on the target, packet should be spoofed to appear as if it's coming from the idle host IP address
+3. trigger the idle machine again to respond so we can compare the new IP ID  w/ one received earlier
+
+- figure below we have attacker system porbing idle machine, a multi function printer
+- by sending a SYN/ACK it responds w/ RST pscket containing its newly incremented IP ID
+
+<img width="882" height="546" alt="image" src="https://github.com/user-attachments/assets/5118afad-b252-41b4-bc4a-1a07d4568f77" />
+
+- attacker sends a SYN packet to TCP port they want top check on the target machine in the next step
+- but this packet will use idle host IP address as the source
+- 3 scenarios would arise
+
+**Scenario 1**
+- shown in figure below TCP port is closed s
+- so the target machine responds to the idle host w/ RST packet
+- idle host does not respond so it's IP ID is not incremented
+
+<img width="882" height="562" alt="image" src="https://github.com/user-attachments/assets/da74b775-0822-456e-a2a7-376ed4ffc8e2" />
+
+**Scenario 2**
+- TCP port is open so the target machine responds w/ a SYN/ACK to the idle host
+- idle host responds to this unexpected packet w/ an RST packet
+- thus incrementing it's IP ID
+
+<img width="882" height="562" alt="image" src="https://github.com/user-attachments/assets/254c7a64-49a1-459f-928e-77201f506b39" />
+
+**Scenario 3**
+- target machine does not respond at all due to firewall rules
+- lack of repsonse leads to same result as closed response = idle host won't increase the IP ID
+- the attacker sends another SYN/ACK to the idle host
+- idle host responds w/ RST packet, incrementing the IP ID by one again
+- attacker needs to compare the IP ID of the RST packet received in the first step w/ the IP ID of the RST packet received in this third step
+- if the difference is 1 it means the port on the target machine was closed or filtered
+- but the difference is 2 = means the port scan on the target was open
+- worth repeating that this scan is called an idle scan b/c choosing an idle host is indispensable for the accuracy of the scan
+- if the 'idle host' is busy all the returned IP IDs would be useless
+
+--- 
+
+<img width="541" height="73" alt="image" src="https://github.com/user-attachments/assets/b057aab5-854d-4005-a495-e3a587fd3129" />
+
+</details>
+
+
+<details>
+<summary>Getting More Details</summary>
+
+- may consider adding `--reason` if want Nmap to provide more details regarding its reasoning and conclusions
+
+1. without '--reason'
+
+<img width="342" height="196" alt="image" src="https://github.com/user-attachments/assets/c746bbe2-6f9e-4460-92eb-b0d61b4cb258" />
+
+2. with `--reason`nmap
+
+<img width="332" height="191" alt="image" src="https://github.com/user-attachments/assets/3757dc6f-5146-404e-8423-010f60793a3e" />
+
+- providing `--reason` flag gives us the explicit reason why Nmap concluded that the system is up or a particular port is open
+- we can see this system is considered online b/c Nmap 'received arp-response'
+- on the other hand we know the SSH port is deemed to be open b/c Nmap received a 'syn-ack' packet back
+
+- for more detailed output can use `-v` for verbose output or `-vv` for even more verbosity
+
+<img width="341" height="238" alt="image" src="https://github.com/user-attachments/assets/c5a516cf-cf2f-4145-b73f-a5e6e4a9a04e" />
+
+<img width="339" height="237" alt="image" src="https://github.com/user-attachments/assets/d1efaa7d-37bb-4bd9-a4d1-b25573ecbe46" />
+
+- if `-vv` does not satisfy your curiosity
+- `-d` for debugging details
+- `-dd` for even more details
+- `-d` will create an output that extends beyond a single screen
+
+---
+
+<img width="855" height="252" alt="image" src="https://github.com/user-attachments/assets/d9054ae2-79a2-4c7d-aee2-2f7238660596" />
+
+ </details>
+
+---
+
+## cheat sheet 
+
+| Port Scan Type            | Example Command                                           | Purpose                                                                 |
+| ------------------------- | --------------------------------------------------------- | ----------------------------------------------------------------------- |
+| TCP Null Scan             | `sudo nmap -sN 10.10.37.190`                             | Sends TCP packets with no flags set; used for stealth scanning.         |
+| TCP FIN Scan              | `sudo nmap -sF 10.10.37.190`                             | Sends TCP FIN packets; bypasses some firewall rules.                    |
+| TCP Xmas Scan             | `sudo nmap -sX 10.10.37.190`                             | Sends FIN, PSH, URG flags; detects open ports stealthily.              |
+| TCP Maimon Scan           | `sudo nmap -sM 10.10.37.190`                             | Uses FIN/ACK combination; less common stealth scan.                     |
+| TCP ACK Scan              | `sudo nmap -sA 10.10.37.190`                             | Determines firewall rules and port states.                              |
+| TCP Window Scan           | `sudo nmap -sW 10.10.37.190`                             | Checks TCP window size to detect open ports.                            |
+| Custom TCP Scan           | `sudo nmap --scanflags URGACKPSHRSTSYNFIN 10.10.37.190`  | Sends custom TCP flags for advanced scanning techniques.                |
+| Spoofed Source IP         | `sudo nmap -S SPOOFED_IP 10.10.37.190`                  | Sends packets using a fake source IP to hide your identity.            |
+| Spoofed MAC Address       | `--spoof-mac SPOOFED_MAC`                                | Changes the MAC address for stealth or bypassing MAC-based filters.     |
+| Decoy Scan                | `nmap -D DECOY_IP,ME 10.10.37.190`                       | Uses decoy IPs to confuse intrusion detection systems.                  |
+| Idle (Zombie) Scan        | `sudo nmap -sI ZOMBIE_IP 10.10.37.190`                  | Uses a third-party host (zombie) to scan targets stealthily.           |
+| Fragment IP data into 8B  | `-f`                                                      | Splits packets into 8-byte fragments to evade detection.                |
+| Fragment IP data into 16B | `-ff`                                                     | Splits packets into 16-byte fragments for stealth scanning.             |
+
+
+| Option             | Purpose                                 |
+| ------------------ | --------------------------------------- |
+| --source-port PORT_NUM | Specify source port number             |
+| --data-length NUM     | Append random data to reach given length |
+
+- these scan types rely on setting TCP flags in unexpected ways to prompt ports for a reply
+- Null, FIN and Xmas scan provoke a response from closed ports
+- Maimon, ACK, and window scans provoke a response from open and closed ports
+
+| Option  | Purpose                                 |
+| ------- | --------------------------------------- |
+| --reason | Explains how Nmap made its conclusion  |
+| -v       | Verbose                                |
+| -vv      | Very verbose                            |
+| -d       | Debugging                               |
+| -dd      | More details for debugging              |
+
+## Reflection
+This room has significantly strengthened my network reconnaissance skills. I now understand the variety of scanning methods Nmap provides, when to use them, and how to interpret the results. I also appreciate the importance of stealth, timing, and proper target selection to avoid unnecessary noise or detection. These skills are foundational for ethical penetration testing and network security assessments.
