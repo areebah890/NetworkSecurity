@@ -463,6 +463,12 @@ key insights:
      - Password attacks (something the target knows).
      - Protocols like Telnet, SSH, POP3, IMAP require passwords to gain access.
 
+example:
+
+<img width="336" height="359" alt="image" src="https://github.com/user-attachments/assets/df00f42f-3ad7-4087-92d0-aa231c10fd76" />
+
+
+
 - Common Weak Passwords (Adobe 2013 breach):
   
 1. 123456
@@ -496,10 +502,101 @@ key insights:
 3. Brute Force Attack:
 
      - Tries all possible character combinations.
-     - Time-consuming, grows exponentially with password length and complexity
+     - Time-consuming, grows exponentially with password length and        complexity
 
 
 - key insights: Weak and predictable passwords are highly vulnerable to all three attack types
 
 --- 
+## Dictionary Attacks:
+- use precompiled wordlists from data breaches (e.g. RockYou)
+- file location on attackbox: /usr/share/wordlists/rockyou.txt
+- wordlist choice can be target-specific (like french words for a frech user)
 
+**THC Hydra**
+- tool for automated password attacks on many protocols: FTP, POP3, IMAP, SMTP, SSH, HTTP
+- Basic syntax: `hydra -l username -P wordlist.txt server service`
+- Options:
+
+   - `-l username` -> target login name
+   - `-P wordlist.txt` -> file with passwords to try
+   - `server` -> hostname or IP of target
+   - `service` -> service to attack (ftp,ssh, etc)
+ 
+- example commands:
+
+  - FTP Attack:
+  - `hydra -l mark -P /usr/share/wordlists/rockyou.txt MACHINE_IP ftp
+hydra -l mark -P /usr/share/wordlists/rockyou.txt ftp://MACHINE_IP`
+
+      - SSH attack:
+      - `hydra -l frank -P /usr/share/wordlists/rockyou.txt MACHINE_IP ssh`
+   
+- optional arguments:
+
+     - `-s PORT` -> specify non-default port
+     - `-V` or `-vV` -> verbose output, shows attempted username/password combos
+     - `-t n` -> number of parallel connections (e.g. `-t 16`)
+     - `-d` -> debuggin output, useful for troubleshooting connection issues
+     - use `CTRL-C` to stop once password is found
+ 
+  - Mitigation against password attack:
+1. Password policy: human verification for GUI login pages
+2. Public Certificates: authentication via certificates (e.g. SSH)
+3. Two-factor Authentication (2FA): secondary code via email, app or SMS
+4. Other sophisticated methods: IP-based geolocation, behavioural monitoring
+5. Best practice: combine multiple mitigation approaches for strong protection
+
+--- 
+
+<img width="931" height="220" alt="image" src="https://github.com/user-attachments/assets/996a6064-65be-4367-9320-27f6df0aa526" />
+
+</details>
+
+---
+
+## Summary 
+
+3 common attacks are:
+1. Sniffing Attack
+2. MITM Attack
+3. Password Attack
+
+- for each above we focused on attack details and the mitigation steps
+- it is good to remember the default port number for common protocols
+
+---
+
+| Protocol | TCP Port | Application(s)                 | Data Security         |
+|----------|----------|--------------------------------|---------------------|
+| FTP      | 21       | File Transfer                  | Cleartext           |
+| FTPS     | 990      | File Transfer                  | **Encrypted**       |
+| HTTP     | 80       | Worldwide Web                  | Cleartext           |
+| HTTPS    | 443      | Worldwide Web                  | **Encrypted**       |
+| IMAP     | 143      | Email (MDA)                    | Cleartext           |
+| IMAPS    | 993      | Email (MDA)                    | **Encrypted**       |
+| POP3     | 110      | Email (MDA)                    | Cleartext           |
+| POP3S    | 995      | Email (MDA)                    | **Encrypted**       |
+| SFTP     | 22       | File Transfer                  | **Encrypted**       |
+| SSH      | 22       | Remote Access and File Transfer| **Encrypted**       |
+| SMTP     | 25       | Email (MTA)                    | Cleartext           |
+| SMTPS    | 465      | Email (MTA)                    | **Encrypted**       |
+| Telnet   | 23       | Remote Access                  | Cleartext           |
+
+---
+
+- cleartext protocols -> unsafe, vulnerable to sniffing
+- encrypted protocols -> safe, use TLS/SSL or SSH for confidentiality and integrity
+
+---
+
+- Hydra remains efficient tool
+
+| Option       | Explanation                                             |
+|--------------|---------------------------------------------------------|
+| -l username  | Provide the login name                                  |
+| -P WordList.txt | Specify the password list to use                      |
+| server service | Set the server address and service to attack         |
+| -s PORT      | Use in case of non-default service port number         |
+| -V or -vV    | Show the username and password combinations being tried|
+| -d           | Display debugging output if the verbose output is not helping |
